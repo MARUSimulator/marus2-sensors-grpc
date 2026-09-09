@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "displayName": "MARUS2 Sensors gRPC",
   "description": "gRPC support for sensor modules in MARUS2.",
-  "unity": "6000.3",
-  "unityRelease": "23f1",
+  "unity": "6000.5",
+  "unityRelease": "11f1",
   "dependencies": {
     "com.marus2.core": "1.0.0",
     "com.marus2.sensors": "1.0.0",
