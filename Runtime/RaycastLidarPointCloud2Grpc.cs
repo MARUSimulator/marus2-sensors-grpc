@@ -31,7 +31,7 @@ namespace Marus.Sensors
     /// Can drop performance
     /// </summary>
     [RequireComponent(typeof(RaycastLidar))]
-    public class RaycastLidarPointCloud2gRPC : SensorStreamer<SensorStreamingClient, PointCloud2StreamingRequest>
+    public class RaycastLidarPointCloud2Grpc : SensorStreamer<SensorStreamingClient, PointCloud2StreamingRequest>
     {
         public bool PublishIntensityAndRing = false;
         RaycastLidar sensor;

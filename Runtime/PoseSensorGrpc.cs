@@ -28,7 +28,7 @@ namespace Marus.Sensors.Primitive
     /// Pose sensor implementation
     /// </summary>
     [RequireComponent(typeof(PoseSensor))]
-    public class PoseSensorgRPC : SensorStreamer<SensorStreamingClient, PoseStreamingRequest>
+    public class PoseSensorGrpc : SensorStreamer<SensorStreamingClient, PoseStreamingRequest>
     {
         PoseSensor sensor;
 

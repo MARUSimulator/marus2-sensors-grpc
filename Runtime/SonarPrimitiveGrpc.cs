@@ -21,7 +21,7 @@ using Marus.Core;
 namespace Marus.Sensors.Primitive
 {
     [RequireComponent(typeof(SonarPrimitive))]
-    public class SonarPrimitivegRPC : SensorStreamer<SensorStreamingClient, SonarStreamingRequest>
+    public class SonarPrimitiveGrpc : SensorStreamer<SensorStreamingClient, SonarStreamingRequest>
     {
         protected override SonarStreamingRequest ComposeMessage()
         {

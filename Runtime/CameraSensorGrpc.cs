@@ -26,7 +26,7 @@ namespace Marus.Sensors
     /// Camera sensor implementation
     /// </summary>
     [RequireComponent(typeof(CameraSensor))]
-    public class CameraSensorgRPC : SensorStreamer<SensorStreamingClient, CameraStreamingRequest>
+    public class CameraSensorGrpc : SensorStreamer<SensorStreamingClient, CameraStreamingRequest>
     {
         CameraSensor sensor;
         new void Start()

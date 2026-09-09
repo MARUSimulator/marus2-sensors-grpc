@@ -23,7 +23,7 @@ namespace Marus.Sensors.AIS
 {
     [RequireComponent(typeof(AisSensor))]
     [RequireComponent(typeof(AisDevice))]
-    public class AisSensorgRPC : SensorStreamer<SensorStreamingClient, AISStreamingRequest>
+    public class AisSensorGrpc : SensorStreamer<SensorStreamingClient, AISStreamingRequest>
     {
         AisSensor sensor;
         AisDevice device;

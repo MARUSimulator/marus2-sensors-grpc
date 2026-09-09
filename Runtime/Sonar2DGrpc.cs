@@ -22,7 +22,7 @@ using static Sensorstreaming.SensorStreaming;
 namespace Marus.Sensors.Primitive
 {
     [RequireComponent(typeof(Sonar2D))]
-    public class Sonar2DgRPC : SensorStreamer<SensorStreamingClient, PointCloudStreamingRequest>
+    public class Sonar2DGrpc : SensorStreamer<SensorStreamingClient, PointCloudStreamingRequest>
     {
         Sonar2D sensor;
         new void Start()

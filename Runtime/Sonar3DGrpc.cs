@@ -23,7 +23,7 @@ using static Sensorstreaming.SensorStreaming;
 namespace Marus.Sensors.Primitive
 {
     [RequireComponent(typeof(Sonar3D))]
-    public class Sonar3DgRPC : SensorStreamer<SensorStreamingClient, CompressedImageStreamingRequest>
+    public class Sonar3DGrpc : SensorStreamer<SensorStreamingClient, CompressedImageStreamingRequest>
     {
         Sonar3D sensor;
         new void Start()

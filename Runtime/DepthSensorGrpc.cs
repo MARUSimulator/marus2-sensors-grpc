@@ -12,55 +12,64 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Geometry;
 using Marus.Core;
 using Marus.Networking;
 using Marus.Sensors.Primitive;
-using Sensor;
 using Sensorstreaming;
 using Std;
 using UnityEngine;
 using static Sensorstreaming.SensorStreaming;
+using Quaternion = Geometry.Quaternion;
 
 namespace Marus.Sensors.gRPC
 {
-    [RequireComponent(typeof(GnssSensor))]
-    public class GnssgRPC : SensorStreamer<SensorStreamingClient, GnssStreamingRequest>
+    [RequireComponent(typeof(DepthSensor))]
+    public class DepthSensorGrpc : SensorStreamer<SensorStreamingClient, DepthStreamingRequest>
     {
-        GnssSensor sensor;
-        new void Start()
+        public double covariance;
+        DepthSensor sensor;
+
+        new public void Start()
         {
-            sensor = GetComponent<GnssSensor>();
+            sensor = GetComponent<DepthSensor>();
             StreamSensor(sensor,
-                streamingClient.StreamGnssSensor);
+                streamingClient.StreamDepthSensor);
             base.Start();
         }
 
-        protected override GnssStreamingRequest ComposeMessage()
+
+        protected override DepthStreamingRequest ComposeMessage()
         {
-            var msg = new GnssStreamingRequest
+            var depthOut = new DepthStreamingRequest
             {
                 Address = address,
-                Data = new NavSatFix
+                Data = new PoseWithCovarianceStamped()
                 {
                     Header = new Header
                     {
                         FrameId = sensor.frameId,
                         Timestamp = TimeHandler.Instance.TimeDouble
                     },
-                    Status = new NavSatStatus
+                    Pose = new PoseWithCovariance
                     {
-                        Service = NavSatStatus.Types.Service.Gps,
-                        Status = sensor.isRTK ? NavSatStatus.Types.Status.GbasFix : NavSatStatus.Types.Status.SbasFix
-                    },
-                    Latitude = sensor.point.latitude,
-                    Longitude = sensor.point.longitude,
-                    Altitude = sensor.point.altitude
+                        Pose = new Geometry.Pose
+                        {
+                            Position = new Point()
+                            {
+                                X = 0,
+                                Y = 0,
+                                Z = sensor.depth
+                            },
+                            Orientation = new Quaternion() { }
+                        }
+                    }
                 }
             };
-            // if (transform.position.y > -sensor.maximumOperatingDepth)
-            // {
-                return msg;
-            // }
+            var covOut = new double[36];
+            covOut[15] = covariance;
+            depthOut.Data.Pose.Covariance.AddRange(covOut);
+            return depthOut;
         }
     }
 }

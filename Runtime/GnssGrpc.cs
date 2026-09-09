@@ -12,64 +12,55 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Geometry;
 using Marus.Core;
 using Marus.Networking;
 using Marus.Sensors.Primitive;
+using Sensor;
 using Sensorstreaming;
 using Std;
 using UnityEngine;
 using static Sensorstreaming.SensorStreaming;
-using Quaternion = Geometry.Quaternion;
 
 namespace Marus.Sensors.gRPC
 {
-    [RequireComponent(typeof(DepthSensor))]
-    public class DepthSensorgRPC : SensorStreamer<SensorStreamingClient, DepthStreamingRequest>
+    [RequireComponent(typeof(GnssSensor))]
+    public class GnssGrpc : SensorStreamer<SensorStreamingClient, GnssStreamingRequest>
     {
-        public double covariance;
-        DepthSensor sensor;
-
-        new public void Start()
+        GnssSensor sensor;
+        new void Start()
         {
-            sensor = GetComponent<DepthSensor>();
+            sensor = GetComponent<GnssSensor>();
             StreamSensor(sensor,
-                streamingClient.StreamDepthSensor);
+                streamingClient.StreamGnssSensor);
             base.Start();
         }
 
-
-        protected override DepthStreamingRequest ComposeMessage()
+        protected override GnssStreamingRequest ComposeMessage()
         {
-            var depthOut = new DepthStreamingRequest
+            var msg = new GnssStreamingRequest
             {
                 Address = address,
-                Data = new PoseWithCovarianceStamped()
+                Data = new NavSatFix
                 {
                     Header = new Header
                     {
                         FrameId = sensor.frameId,
                         Timestamp = TimeHandler.Instance.TimeDouble
                     },
-                    Pose = new PoseWithCovariance
+                    Status = new NavSatStatus
                     {
-                        Pose = new Geometry.Pose
-                        {
-                            Position = new Point()
-                            {
-                                X = 0,
-                                Y = 0,
-                                Z = sensor.depth
-                            },
-                            Orientation = new Quaternion() { }
-                        }
-                    }
+                        Service = NavSatStatus.Types.Service.Gps,
+                        Status = sensor.isRTK ? NavSatStatus.Types.Status.GbasFix : NavSatStatus.Types.Status.SbasFix
+                    },
+                    Latitude = sensor.point.latitude,
+                    Longitude = sensor.point.longitude,
+                    Altitude = sensor.point.altitude
                 }
             };
-            var covOut = new double[36];
-            covOut[15] = covariance;
-            depthOut.Data.Pose.Covariance.AddRange(covOut);
-            return depthOut;
+            // if (transform.position.y > -sensor.maximumOperatingDepth)
+            // {
+                return msg;
+            // }
         }
     }
 }

@@ -12,55 +12,53 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Geometry;
 using Marus.Core;
 using Marus.Networking;
-using Marus.Sensors.Primitive;
+using Sensor;
 using Sensorstreaming;
 using Std;
 using UnityEngine;
 using static Sensorstreaming.SensorStreaming;
 
-namespace Marus.Sensors.gRPC
+namespace Marus.Sensors.Primitive
 {
-
-    [RequireComponent(typeof(DvlSensor))]
-    public class DvlgRPC : SensorStreamer<SensorStreamingClient, DvlStreamingRequest>
+    /// <summary>
+    /// Imu sensor implementation
+    /// </summary>
+    [RequireComponent(typeof(ImuSensor))]
+    public class ImuGrpc : SensorStreamer<SensorStreamingClient, ImuStreamingRequest>
     {
-        DvlSensor sensor;
+        ImuSensor sensor;
         new void Start()
         {
-            sensor = GetComponent<DvlSensor>();
+            sensor = GetComponent<ImuSensor>();
             StreamSensor(sensor,
-                streamingClient.StreamDvlSensor);
+                streamingClient.StreamImuSensor);
             base.Start();
         }
 
-        protected override DvlStreamingRequest ComposeMessage()
+        protected override ImuStreamingRequest ComposeMessage()
         {
-            var dvlOut = new TwistWithCovarianceStamped
+            var imuOut = new Imu()
             {
-                Header = new Header()
+                Header = new Header
                 {
                     FrameId = sensor.frameId,
                     Timestamp = TimeHandler.Instance.TimeDouble
                 },
-                Twist = new TwistWithCovariance
-                {
-                    Twist = new Twist
-                    {
-                        Linear = sensor.groundVelocity.Unity2Body().AsMsg()
-                    }
-                }
+                Orientation = sensor.orientation.Unity2Map().AsMsg(),
+                AngularVelocity = (-sensor.angularVelocity).Unity2Body().AsMsg(),
+                LinearAcceleration = sensor.linearAcceleration.Unity2Body().AsMsg(),
             };
-            dvlOut.Twist.Covariance.AddRange(sensor.velocityCovariance);
+            imuOut.OrientationCovariance.AddRange(sensor.orientationCovariance);
+            imuOut.LinearAccelerationCovariance.AddRange(sensor.linearAccelerationCovariance);
+            imuOut.AngularVelocityCovariance.AddRange(sensor.angularVelocityCovariance);
 
-            return new DvlStreamingRequest
+            return new ImuStreamingRequest
             {
-                Address = address,
-                Data = dvlOut
+                Data = imuOut,
+                Address = address
             };
-            // await _streamWriter.WriteAsync(request);
         }
     }
 }
