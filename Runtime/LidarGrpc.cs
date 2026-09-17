@@ -14,7 +14,9 @@
 
 using Marus.Core;
 using Marus.Networking;
+using Sensor;
 using Sensorstreaming;
+using Unity.Collections;
 using UnityEngine;
 using static Sensorstreaming.SensorStreaming;
 
@@ -53,15 +55,29 @@ namespace Marus.Sensors
         protected override PointCloud2StreamingRequest ComposeMessage()
         {
             if (sensor == null || !sensor.Points.IsCreated || sensor.Points.Length == 0)
-                return null;
-
-            var pointCloud = _packer.Pack(sensor.Points, sensor.Readings, format, filterInvalidPoints, sensor.frameId);
-
-            return new PointCloud2StreamingRequest
             {
-                Data = pointCloud,
-                Address = address
-            };
+                return null;
+            }
+
+            try
+            {
+                var pointCloud = _packer.Pack(sensor.Points, sensor.Readings, format, filterInvalidPoints, sensor.frameId);
+                if (pointCloud == null)
+                {
+                    return null;
+                }
+
+                return new PointCloud2StreamingRequest
+                {
+                    Data = pointCloud,
+                    Address = address
+                };
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[LidarGrpc] Exception in ComposeMessage for {address}: {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return null;
+            }
         }
 
         private void OnDestroy()
