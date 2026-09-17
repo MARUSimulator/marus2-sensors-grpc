@@ -225,8 +225,13 @@ namespace Marus.Sensors
             }
         }
 
+        private byte[] _rawBytesA;
+        private byte[] _rawBytesB;
+        private bool _useBufferA;
+
         /// <summary>
         /// Packs points and readings into a PointCloud2 Protobuf message via Burst-compiled jobs.
+        /// Uses preallocated double buffers and zero-copy wrapping to eliminate heap garbage allocations.
         /// </summary>
         public PointCloud2 Pack(NativeArray<Vector3> points, NativeArray<LidarReading> readings,
             PointCloudFormat format, bool filterInvalid, string frameId)
@@ -241,8 +246,18 @@ namespace Marus.Sensors
 
             int validCount = 0;
             int pointStep = 0;
-            byte[] rawBytes = null;
             List<PointField> fields = null;
+            NativeArray<byte> byteSlice = default;
+
+            int maxBytes = totalPoints * (format == PointCloudFormat.XYZIRT ? 24 : (format == PointCloudFormat.XYZI ? 16 : 12));
+            if (_rawBytesA == null || _rawBytesA.Length < maxBytes)
+            {
+                _rawBytesA = new byte[maxBytes];
+                _rawBytesB = new byte[maxBytes];
+            }
+
+            byte[] targetBuffer = _useBufferA ? _rawBytesA : _rawBytesB;
+            _useBufferA = !_useBufferA;
 
             switch (format)
             {
@@ -258,7 +273,7 @@ namespace Marus.Sensors
                         FilterInvalid = filterInvalid
                     }.Run();
                     validCount = _countBuffer[0];
-                    rawBytes = _xyzBuffer.Reinterpret<byte>(12).GetSubArray(0, validCount * 12).ToArray();
+                    byteSlice = _xyzBuffer.Reinterpret<byte>(12).GetSubArray(0, validCount * 12);
                     break;
 
                 case PointCloudFormat.XYZI:
@@ -273,7 +288,7 @@ namespace Marus.Sensors
                         FilterInvalid = filterInvalid
                     }.Run();
                     validCount = _countBuffer[0];
-                    rawBytes = _xyziBuffer.Reinterpret<byte>(16).GetSubArray(0, validCount * 16).ToArray();
+                    byteSlice = _xyziBuffer.Reinterpret<byte>(16).GetSubArray(0, validCount * 16);
                     break;
 
                 case PointCloudFormat.XYZIRT:
@@ -288,17 +303,22 @@ namespace Marus.Sensors
                         FilterInvalid = filterInvalid
                     }.Run();
                     validCount = _countBuffer[0];
-                    rawBytes = _xyzirtBuffer.Reinterpret<byte>(24).GetSubArray(0, validCount * 24).ToArray();
+                    byteSlice = _xyzirtBuffer.Reinterpret<byte>(24).GetSubArray(0, validCount * 24);
                     break;
             }
 
             int byteLength = validCount * pointStep;
+            if (byteLength > 0)
+            {
+                NativeArray<byte>.Copy(byteSlice, targetBuffer, byteLength);
+            }
+
             var pointCloud = new PointCloud2
             {
                 Header = new Std.Header
                 {
                     FrameId = frameId,
-                    Timestamp = TimeHandler.Instance.TimeDouble
+                    Timestamp = TimeHandler.HasInstance ? TimeHandler.Instance.TimeDouble : Time.timeAsDouble
                 },
                 Height = 1,
                 Width = (uint)validCount,
@@ -306,7 +326,7 @@ namespace Marus.Sensors
                 PointStep = (uint)pointStep,
                 RowStep = (uint)byteLength,
                 IsDense = filterInvalid,
-                Data = ByteString.CopyFrom(rawBytes)
+                Data = UnsafeByteOperations.UnsafeWrap(new ReadOnlyMemory<byte>(targetBuffer, 0, byteLength))
             };
             pointCloud.Fields.AddRange(fields);
 
